@@ -65,23 +65,6 @@ def get_task_list():
     return task_list
 
 
-def print_wait_list(wait_list):
-    s = ''
-    for i in wait_list:
-        s = s + str(i.id + ",")
-    print('等待队列是:' + s)
-
-
-def print_processors(pro_list):
-    for pro in pro_list:
-        if pro.state == 0:
-            print('处理器{}空闲...'.format(pro.id))
-        else:
-            task = pro.task
-            print('处理器{}正在工作,任务为{},arrival为{},duration为{},任务完成时间为:{}'
-                  .format(pro.id, task.id, task.arrival, task.duration, pro.finish_time))
-
-
 # connect to the database from filename
 def connect(filename):
     # if database file not exists, print the warning and exit
@@ -174,31 +157,24 @@ while True:
     # update the clock
     clock.time = clock.next_event_time
 
-    # 检查添加任务
-    if len(task_list) > 0:
-        # if the time is that arrival time of task, check task
-        if clock.time == task_list[0].arrival:
-            task = task_list.pop(0)
-            print('** {} : Task {} with duration {} enters the system.'.format(clock.time, task.id, task.duration))
-            if check_task_id(task):
-                wait_list.append(task)
-            else:
-                # discard the task and print
-                print('** Task [{}] unfeasible and discarded'.format(task.id))
-
-    # 检查任务完成
-    for pro in pro_list:
-        if pro.task is not None and clock.time == pro.finish_time:
-            # task completed
-            task = pro.task
-            print('任务{}完成了,arrival为:{},duration为:{},任务完成时间为:{}'
-                  .format(task.id, task.arrival, task.duration, pro.finish_time))
-
-            # release the processor
-            release_pro(pro)
-
-    # get leisure processor
+    # get the leisure processor
     free_pro = get_free_pro(pro_list)
+
+    # check the event of task arriving
+    if len(task_list) > 0 and clock.time == task_list[0].arrival:
+        task = task_list.pop(0)
+        print('** {} : Task {} with duration {} enters the system.'.format(clock.time, task.id, task.duration))
+
+        # if task id satisfies the rules, join the waiting list
+        if check_task_id(task):
+            wait_list.append(task)
+            print('** Task {} accepted.'.format(task.id))
+
+            if free_pro is None:
+                print('** Task {} on hold.'.format(task.id))
+        else:
+            # discard the task and print
+            print('** Task {} unfeasible and discarded'.format(task.id))
 
     # assign the task to leisure processor
     if free_pro is not None and len(wait_list) > 0:
@@ -207,12 +183,16 @@ while True:
         free_pro.task = task
         free_pro.finish_time = clock.time + task.duration
 
-        print('任务{}被分配到了处理器{},arrival是{},duration是{}'.format(task.id, free_pro.id, task.arrival, task.duration))
-        print('任务{}从现在时间点{}开始执行,完成时间为:{}'.format(task.id, clock.time, free_pro.finish_time))
+        print('** {} : Task {} assigned to processor {}.'.format(clock.time, task.id, free_pro.id))
 
-    # 打印处理器和等待队列
-    print_processors(pro_list)
-    print_wait_list(wait_list)
+    # 检查任务完成
+    for pro in pro_list:
+        if pro.task is not None and clock.time == pro.finish_time:
+            # task completed
+            print('** {} : Task {} completed.'.format(clock.time, pro.task.id))
+
+            # release the processor
+            release_pro(pro)
 
     # initialize the event time list
     event_time_list = []
@@ -234,5 +214,3 @@ while True:
         event_time_list.sort()
         clock.next_event_time = event_time_list[0]
 
-    print('现在的时间点是: {}, 下一个事件的时间点是: {}'.format(clock.time, clock.next_event_time))
-    print('==============================')
