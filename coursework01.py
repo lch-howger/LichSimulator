@@ -5,7 +5,7 @@ import random
 import math
 
 # the filename of the database
-filename_db = '../coursework/tasks.db'
+filename_db = './tasks.db'
 # sql of creating table(num,id,arrival,duration)
 sql_create_table = 'CREATE TABLE tasks (num INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL, id TEXT NOT NULL, arrival REAL NOT NULL, duration INTEGER NOT NULL)'
 # sql of insert task into table

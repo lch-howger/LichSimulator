@@ -6,7 +6,7 @@ import sys
 import re
 
 # the filename of the database
-filename_db = '../coursework/tasks.db'
+filename_db = './tasks.db'
 # sql of selecting all tasks
 sql_select_tasks = 'SELECT * FROM tasks'
 
@@ -157,6 +157,15 @@ while True:
     # update the clock
     clock.time = clock.next_event_time
 
+    # check the event of task completing
+    for pro in pro_list:
+        if pro.task is not None and clock.time == pro.finish_time:
+            # task completed
+            print('** {} : Task {} completed.'.format(clock.time, pro.task.id))
+
+            # release the processor
+            release_pro(pro)
+
     # get the leisure processor
     free_pro = get_free_pro(pro_list)
 
@@ -170,6 +179,7 @@ while True:
             wait_list.append(task)
             print('** Task {} accepted.'.format(task.id))
 
+            # if there is no leisure processor, task on hold
             if free_pro is None:
                 print('** Task {} on hold.'.format(task.id))
         else:
@@ -182,17 +192,7 @@ while True:
         free_pro.state = 1
         free_pro.task = task
         free_pro.finish_time = clock.time + task.duration
-
         print('** {} : Task {} assigned to processor {}.'.format(clock.time, task.id, free_pro.id))
-
-    # 检查任务完成
-    for pro in pro_list:
-        if pro.task is not None and clock.time == pro.finish_time:
-            # task completed
-            print('** {} : Task {} completed.'.format(clock.time, pro.task.id))
-
-            # release the processor
-            release_pro(pro)
 
     # initialize the event time list
     event_time_list = []
@@ -213,4 +213,3 @@ while True:
     else:
         event_time_list.sort()
         clock.next_event_time = event_time_list[0]
-
