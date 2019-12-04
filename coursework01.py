@@ -3,7 +3,6 @@ import os
 import string
 import random
 import math
-import re
 
 # the filename of the database
 filename_db = '../coursework/tasks.db'
@@ -92,24 +91,6 @@ def select_tasks(db):
     print("{0:->3} | {0:->6} | {0:->19} | {0:->3}".format(''))
     for item in records:
         print("{:>3} | {:>6} | {:>19} | {:>2}".format(item[0], item[1], item[2], item[3]))
-
-        number = re.compile(r'[0-9]')
-        lowercase = re.compile(r'[a-z]')
-        uppercase = re.compile(r'[A-Z]')
-        symbol = re.compile(r'[@_#*\-&]')
-
-        str = item[1]
-        search = number.search(str)
-        print(search)
-
-        search = lowercase.search(str)
-        print(search)
-
-        search = uppercase.search(str)
-        print(search)
-
-        search = symbol.search(str)
-        print(search)
 
     # close the cursor
     cursor.close()

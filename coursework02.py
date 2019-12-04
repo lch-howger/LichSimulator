@@ -3,6 +3,7 @@ import random
 import os
 import sqlite3
 import sys
+import re
 
 # the filename of the database
 filename_db = '../coursework/tasks.db'
@@ -94,25 +95,63 @@ def connect(filename):
     return db
 
 
-# 创建task
-task_list = get_task_list()
+# check the id of the task to satisfy at least 3 rules
+def check_task_id(task):
+    id = task.id
+    number = re.compile(r'[0-9]')
+    lowercase = re.compile(r'[a-z]')
+    uppercase = re.compile(r'[A-Z]')
+    symbol = re.compile(r'[@_#*\-&]')
 
-attr = operator.attrgetter('arrival')
-task_list.sort(key=attr)
+    flag = 0
+    if number.search(id):
+        flag += 1
+    if lowercase.search(id):
+        flag += 1
+    if uppercase.search(id):
+        flag += 1
+    if symbol.search(id):
+        flag += 1
 
-# 创建处理器
-p0 = Processor(0, 0, None, 0)
-p1 = Processor(1, 0, None, 0)
-p2 = Processor(2, 0, None, 0)
-pro_list = [p0, p1, p2]
+    if flag >= 3:
+        return True
+    else:
+        return False
 
-# 创建等待队列
+
+# initialize the task list
+def init_task_list():
+    task_list = get_task_list()
+    attr = operator.attrgetter('arrival')
+    task_list.sort(key=attr)
+    return task_list
+
+
+# initialize the processor list
+def init_pro_list():
+    p0 = Processor(1, 0, None, 0)
+    p1 = Processor(2, 0, None, 0)
+    p2 = Processor(3, 0, None, 0)
+    pro_list = [p0, p1, p2]
+    return pro_list
+
+
+# initialize the task list
+task_list = init_task_list()
+
+# initialize the processor list
+pro_list = init_pro_list()
+
+# initialize the waiting list
 wait_list = []
 
-# 创建时钟
+# initialize the clock
 clock = Clock(0, 0)
 
+# start the simulation
 while True:
+
+    # update the clock
     clock.time = clock.next_event_time
     print('现在的时间点是: {}, 下一个事件的时间点是: ???'.format(clock.time))
 
@@ -122,20 +161,23 @@ while True:
         # 加入队列
         if clock.time == task.arrival:
             task = task_list.pop(0)
-            wait_list.append(task)
+            if check_task_id(task):
+                wait_list.append(task)
+            else:
+                # 抛弃
+                print('** Task [{}] unfeasible and discarded'.format(task.id))
 
     # 检查任务完成
     for pro in pro_list:
-        if pro.task is not None:
-            if clock.time == pro.finish_time:
-                # 完成任务
-                task = pro.task
-                print('任务{}完成了,arrival为:{},duration为:{},任务完成时间为:{}'.format(task.id, task.arrival, task.duration,
-                                                                           pro.finish_time))
-                # 释放处理器
-                pro.task = None
-                pro.state = 0
-                pro.finish_time = 0
+        if pro.task is not None and clock.time == pro.finish_time:
+            # 完成任务
+            task = pro.task
+            print('任务{}完成了,arrival为:{},duration为:{},任务完成时间为:{}'.format(task.id, task.arrival, task.duration,
+                                                                       pro.finish_time))
+            # 释放处理器
+            pro.task = None
+            pro.state = 0
+            pro.finish_time = 0
 
     # 分配任务
     free_pro_list = []
@@ -158,29 +200,27 @@ while True:
 
     # ===============================
 
-    eventTime = []
+    event_time_list = []
 
     # 检查添加任务事件
     if len(task_list) > 0:
         task = task_list[0]
         addEvent = task.arrival
-        eventTime.append(addEvent)
+        event_time_list.append(addEvent)
 
     # 检查任务结束事件
     for pro in pro_list:
-        if pro.task is not None:
+        if pro.state == 1 and pro.task is not None:
             finishEvent = pro.finish_time
-            eventTime.append(finishEvent)
+            event_time_list.append(finishEvent)
 
-    # 整理事件时间集合
-    if len(eventTime) == 0:
-        clock.next_event_time = -1
-        print('现在的时间点是: {}, 下一个事件的时间点是: {}'.format(clock.time, clock.next_event_time))
-        print('结束了')
+    # update the clock
+    if len(event_time_list) == 0:
+        print('** {} : SIMULATION COMPLETED. **'.format(clock.time))
         break
     else:
-        eventTime.sort()
-        clock.next_event_time = eventTime[0]
+        event_time_list.sort()
+        clock.next_event_time = event_time_list[0]
 
     print('现在的时间点是: {}, 下一个事件的时间点是: {}'.format(clock.time, clock.next_event_time))
     print('==============================')
