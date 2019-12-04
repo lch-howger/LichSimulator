@@ -136,6 +136,25 @@ def init_pro_list():
     return pro_list
 
 
+# release the processor
+def release_pro(pro):
+    pro.task = None
+    pro.state = 0
+    pro.finish_time = 0
+
+
+# check the processor list and get the leisure processor
+def get_free_pro(pro_list):
+    free_pro_list = []
+    for pro in pro_list:
+        if pro.state == 0:
+            free_pro_list.append(pro)
+    if len(free_pro_list) > 0:
+        return random.choice(free_pro_list)
+    else:
+        return None
+
+
 # initialize the task list
 task_list = init_task_list()
 
@@ -149,72 +168,65 @@ wait_list = []
 clock = Clock(0, 0)
 
 # start the simulation
+print('** SYSTEM INITIALISED **')
 while True:
 
     # update the clock
     clock.time = clock.next_event_time
-    print('现在的时间点是: {}, 下一个事件的时间点是: ???'.format(clock.time))
 
     # 检查添加任务
     if len(task_list) > 0:
-        task = task_list[0]
-        # 加入队列
-        if clock.time == task.arrival:
+        # if the time is that arrival time of task, check task
+        if clock.time == task_list[0].arrival:
             task = task_list.pop(0)
+            print('** {} : Task {} with duration {} enters the system.'.format(clock.time, task.id, task.duration))
             if check_task_id(task):
                 wait_list.append(task)
             else:
-                # 抛弃
+                # discard the task and print
                 print('** Task [{}] unfeasible and discarded'.format(task.id))
 
     # 检查任务完成
     for pro in pro_list:
         if pro.task is not None and clock.time == pro.finish_time:
-            # 完成任务
+            # task completed
             task = pro.task
-            print('任务{}完成了,arrival为:{},duration为:{},任务完成时间为:{}'.format(task.id, task.arrival, task.duration,
-                                                                       pro.finish_time))
-            # 释放处理器
-            pro.task = None
-            pro.state = 0
-            pro.finish_time = 0
+            print('任务{}完成了,arrival为:{},duration为:{},任务完成时间为:{}'
+                  .format(task.id, task.arrival, task.duration, pro.finish_time))
 
-    # 分配任务
-    free_pro_list = []
-    for pro in pro_list:
-        if pro.state == 0:
-            free_pro_list.append(pro)
-    if len(free_pro_list) > 0 and len(wait_list) > 0:
-        time = clock.time
+            # release the processor
+            release_pro(pro)
+
+    # get leisure processor
+    free_pro = get_free_pro(pro_list)
+
+    # assign the task to leisure processor
+    if free_pro is not None and len(wait_list) > 0:
         task = wait_list.pop(0)
-        freePro = random.choice(free_pro_list)
-        freePro.state = 1
-        freePro.task = task
-        freePro.finish_time = time + task.duration
-        print('任务{}被分配到了处理器{},arrival是{},duration是{}'.format(task.id, freePro.id, task.arrival, task.duration))
-        print('任务{}从现在时间点{}开始执行,完成时间为:{}'.format(task.id, time, freePro.finish_time))
+        free_pro.state = 1
+        free_pro.task = task
+        free_pro.finish_time = clock.time + task.duration
+
+        print('任务{}被分配到了处理器{},arrival是{},duration是{}'.format(task.id, free_pro.id, task.arrival, task.duration))
+        print('任务{}从现在时间点{}开始执行,完成时间为:{}'.format(task.id, clock.time, free_pro.finish_time))
 
     # 打印处理器和等待队列
     print_processors(pro_list)
     print_wait_list(wait_list)
 
-    # ===============================
-
+    # initialize the event time list
     event_time_list = []
 
-    # 检查添加任务事件
+    # check the event time of task arrival
     if len(task_list) > 0:
-        task = task_list[0]
-        addEvent = task.arrival
-        event_time_list.append(addEvent)
+        event_time_list.append(task_list[0].arrival)
 
-    # 检查任务结束事件
+    # check the event time of task finish
     for pro in pro_list:
         if pro.state == 1 and pro.task is not None:
-            finishEvent = pro.finish_time
-            event_time_list.append(finishEvent)
+            event_time_list.append(pro.finish_time)
 
-    # update the clock
+    # update the event time
     if len(event_time_list) == 0:
         print('** {} : SIMULATION COMPLETED. **'.format(clock.time))
         break
