@@ -13,7 +13,7 @@ sql_select_tasks = 'SELECT * FROM tasks'
 
 # definition of Clock to control the time
 # @time     the present time
-# @nect_event_time      the time of next event
+# @next_event_time      the time of next event
 class Clock():
     def __init__(self, time, next_event_time):
         self.time = time
@@ -22,7 +22,9 @@ class Clock():
 
 # definition of Processor to execute tasks
 # @id       the id of processor
-# @state    the working state of processor, 0-leisure, 1-working
+# @state    the working state of processor
+#           value: 0-leisure
+#           value: 1-working
 # @task     the task being processed
 # @finish_time  the end time of task is finished
 class Processor():
@@ -127,6 +129,8 @@ def release_pro(pro):
 
 
 # check the processor list and get the leisure processor
+# if there are free processors, choose a processor randomly
+# if there is no free processor, return None
 def get_free_pro(pro_list):
     free_pro_list = []
     for pro in pro_list:
@@ -152,6 +156,7 @@ clock = Clock(0, 0)
 
 # start the simulation
 print('** SYSTEM INITIALISED **')
+
 while True:
 
     # update the clock
